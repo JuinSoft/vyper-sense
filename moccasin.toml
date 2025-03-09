@@ -43,3 +43,4 @@ explorer_uri = "https://www.oklink.com/amoy"
 [contracts.SentimentTracker]
 source = "SentimentTracker.vy"
 constructor_args = ["VyperSenseTracker"]
+deployer_script = "script.deploy:deploy_contract"
