@@ -3,7 +3,7 @@
 An AI-powered cryptocurrency sentiment analysis bot that monitors news, analyzes market sentiment, generates trading signals, and records data on the blockchain.
 
 <p align="center">
-<img src="https://i.imgur.com/placeholder.png" alt="VyperSense Logo" width="400"/>
+<img src="./icon.jpeg" alt="VyperSense Logo" width="400"/>
 </p>
 
 ## Overview
