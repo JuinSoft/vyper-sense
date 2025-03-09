@@ -39,6 +39,8 @@ default_account_name="account"
 url = "https://rpc-amoy.polygon.technology"
 chain_id = 80002
 explorer_uri = "https://www.oklink.com/amoy"
+explorer_type = "blockscout"
+default_account_name = "account"
 
 [contracts.SentimentTracker]
 source = "SentimentTracker.vy"

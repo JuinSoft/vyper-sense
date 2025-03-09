@@ -17,6 +17,25 @@ class BlockchainService:
         except Exception as e:
             logger.error(f"Failed to connect to blockchain network: {str(e)}")
             
+    def set_network(self, network_name: str) -> bool:
+        """
+        Set the active blockchain network
+        
+        Args:
+            network_name: Name of the network to use
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            config = get_config()
+            self.network = config.get_network(network_name)
+            logger.info(f"Switched to blockchain network: {self.network.name}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to switch blockchain network: {str(e)}")
+            return False
+            
     def deploy_sentiment_tracker(self, name: str) -> Optional[str]:
         """
         Deploy a sentiment tracker contract

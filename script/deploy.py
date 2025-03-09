@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Deploy SentimentTracker contract')
-    parser.add_argument('--network', type=str, default='polygon-fork', help='Blockchain network to use')
+    parser.add_argument('--network', type=str, default='polygon-amoy', help='Blockchain network to use')
     parser.add_argument('--name', type=str, default='CryptoSentimentTracker', help='Name for the sentiment tracker')
     return parser.parse_args()
 

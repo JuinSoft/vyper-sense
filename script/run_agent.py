@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='VyperSense - AI-powered cryptocurrency sentiment analysis')
-    parser.add_argument('--network', type=str, default='polygon-fork', help='Blockchain network to use')
+    parser.add_argument('--network', type=str, default='polygon-amoy', help='Blockchain network to use')
     parser.add_argument('--deploy-contract', action='store_true', help='Deploy a new sentiment tracker contract')
     parser.add_argument('--contract-address', type=str, help='Address of an existing sentiment tracker contract')
     parser.add_argument('--no-twitter', action='store_true', help='Disable Twitter posting')
@@ -69,8 +69,19 @@ def main():
     blockchain_service = None
     contract_address = args.contract_address
     
+    # Set the contract address for polygon-amoy network
+    if args.network == 'polygon-amoy' and not contract_address:
+        contract_address = "0x22633574A82ffC4d5d88ccAb7887799c188544e3"
+        logger.info(f"Using polygon-amoy network with contract address: {contract_address}")
+    
     if not args.no_blockchain:
         blockchain_service = BlockchainService()
+        
+        # Set the active network
+        if blockchain_service.set_network(args.network):
+            logger.info(f"Using blockchain network: {args.network}")
+        else:
+            logger.error(f"Failed to set blockchain network: {args.network}")
         
         # Deploy a new contract if requested
         if args.deploy_contract and not contract_address:
