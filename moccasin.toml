@@ -1,0 +1,41 @@
+[project]
+src = "src"
+out = "out"
+dot_env = ".env"
+name = "crypto-sentiment-bot"
+version = "0.1.0"
+description = "AI-powered cryptocurrency sentiment analysis bot"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["snekmate"]
+
+[networks.pyevm]
+is_zksync = false
+
+[networks.anvil]
+url = "http://127.0.0.1:8545"
+prompt_live = false
+save_to_db = false
+chain_id = 31337
+
+[networks.polygon-fork]
+url = "https://polygon-rpc.com"
+explorer_uri = "https://api.polygonscan.com/api/"
+explorer_type = "etherscan"
+explorer_api_key="${POLYGONSCAN_TOKEN}"
+chain_id = 137
+fork = true
+block_identifier = "latest"
+
+[networks.polygon]
+url = "https://polygon-rpc.com"
+chain_id = 137
+explorer_uri = "https://polygon.blockscout.com/"
+explorer_type = "blockscout"
+explorer_api_key="${BLOCKSCOUT_POLYGON_KEY}"
+default_account_name="account" 
+
+[networks.polygon-amoy]
+url = "https://rpc-amoy.polygon.technology"
+chain_id = 80002
+explorer_uri = https://www.oklink.com/amoy
