@@ -110,3 +110,44 @@ Here are some ideas for extending the project:
 3. **Trading Integration**: Connect to trading APIs to execute trades based on signals
 4. **Web Dashboard**: Create a web interface to visualize sentiment data and trading signals
 5. **Multi-chain Support**: Extend blockchain integration to other chains like Ethereum, Solana, etc.
+
+## Web Interface
+
+The project now includes a modern web interface with MetaMask integration for interacting with the sentiment tracker contract and visualizing sentiment data.
+
+### Features
+
+- **MetaMask Integration**: Connect your Ethereum wallet to interact with the blockchain
+- **Dashboard**: View sentiment analysis and trading signals at a glance
+- **Sentiment Analysis**: Explore detailed sentiment data for various cryptocurrencies
+- **Trading Signals**: View buy/sell/hold signals based on sentiment analysis
+- **Wallet Management**: Manage your wallet and interact with the sentiment tracker contract
+- **Real-time Data**: Uses OpenAI API to analyze news and generate trading signals
+- **Blockchain Integration**: Records sentiment data on the Polygon Amoy blockchain
+- **Visualization**: Generates visualizations for high-confidence trading signals
+
+### Running the Web Interface
+
+1. Navigate to the web directory:
+   ```
+   cd web
+   ```
+
+2. Install dependencies:
+   ```
+   npm install
+   ```
+
+3. Create a `.env` file with your OpenAI API key:
+   ```
+   REACT_APP_OPENAI_API_KEY=your_openai_api_key_here
+   ```
+
+4. Start the development server:
+   ```
+   npm start
+   ```
+
+5. Open your browser and navigate to `http://localhost:3000`
+
+For more details, see the [Web Interface README](./web/README.md).
