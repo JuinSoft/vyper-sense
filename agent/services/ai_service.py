@@ -1,8 +1,10 @@
 import json
 import logging
+import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
+import requests
 
 from agent.model.sentiment import SentimentAnalysis, TradingSignal
 
@@ -296,7 +298,20 @@ class AIService:
                 n=1,
             )
 
-            return response.data[0].url
+            image_url = response.data[0].url
+
+            # Save the image under visualization/{time}/
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            directory = f"visualization/{timestamp}/"
+            os.makedirs(directory, exist_ok=True)
+            image_path = os.path.join(directory, f"{trading_signal.cryptocurrency}_{trading_signal.signal_type}.png")
+
+            # Download the image from the URL and save it
+            image_content = requests.get(image_url).content
+            with open(image_path, "wb") as image_file:
+                image_file.write(image_content)
+
+            return image_url
 
         except Exception as e:
             logger.error(f"Error generating visualization: {str(e)}")

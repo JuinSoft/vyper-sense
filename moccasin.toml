@@ -39,10 +39,14 @@ default_account_name="account"
 url = "https://rpc-amoy.polygon.technology"
 chain_id = 80002
 explorer_uri = "https://www.oklink.com/amoy"
-explorer_type = "blockscout"
-default_account_name = "account"
+explorer_type = "etherscan"
+default_account_name = "jack"
+unsafe_password_file = "$PASSWORD_FILE"
 
 [contracts.SentimentTracker]
 source = "SentimentTracker.vy"
-constructor_args = ["VyperSenseTracker"]
+constructor_args = ["SentimentTracker"]
 deployer_script = "script.deploy:deploy_contract"
+
+[networks.polygon-amoy.contracts.SentimentTracker]
+address = "0x22633574A82ffC4d5d88ccAb7887799c188544e3"

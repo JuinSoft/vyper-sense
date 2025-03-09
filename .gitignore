@@ -10,3 +10,8 @@ lib
 *cfg
 *.lock
 vyper*
+*.log
+__pycache__
+bin
+share
+.DS_Store
