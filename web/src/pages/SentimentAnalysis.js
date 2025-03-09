@@ -26,7 +26,8 @@ import {
   Alert,
   Snackbar,
   IconButton,
-  Tooltip
+  Tooltip,
+  CircularProgress
 } from '@mui/material';
 import { 
   TrendingUp, 
@@ -60,7 +61,7 @@ const SentimentAnalysis = () => {
   }, []);
 
   const fetchData = async () => {
-    setLoading(true);
+    setRefreshing(true);
     setError(null);
     
     try {
@@ -94,7 +95,9 @@ const SentimentAnalysis = () => {
     // Apply cryptocurrency filter
     if (filterCrypto !== 'all') {
       result = result.filter(item => 
-        item.entities.some(entity => entity.toLowerCase() === filterCrypto.toLowerCase())
+        item.entities.some(entity => 
+          (typeof entity === 'object' ? entity.name.toLowerCase() : entity.toLowerCase()) === filterCrypto.toLowerCase()
+        )
       );
     }
     
@@ -122,7 +125,9 @@ const SentimentAnalysis = () => {
         item.headline.toLowerCase().includes(term) ||
         item.source.toLowerCase().includes(term) ||
         item.summary.toLowerCase().includes(term) ||
-        item.entities.some(entity => entity.toLowerCase().includes(term))
+        item.entities.some(entity => 
+          (typeof entity === 'object' ? entity.name.toLowerCase() : entity.toLowerCase()).includes(term)
+        )
       );
     }
     
@@ -132,7 +137,11 @@ const SentimentAnalysis = () => {
       
       switch (sortBy) {
         case 'cryptocurrency':
-          comparison = a.entities[0]?.localeCompare(b.entities[0] || '');
+          const entityA = a.entities[0];
+          const entityB = b.entities[0];
+          const nameA = typeof entityA === 'object' ? entityA.name : entityA || '';
+          const nameB = typeof entityB === 'object' ? entityB.name : entityB || '';
+          comparison = nameA.localeCompare(nameB);
           break;
         case 'sentiment':
           comparison = a.sentiment_score - b.sentiment_score;
@@ -153,7 +162,9 @@ const SentimentAnalysis = () => {
   }, [sentimentData, filterCrypto, filterSentiment, searchTerm, sortBy, sortDirection]);
 
   // Get unique cryptocurrencies for filter
-  const uniqueCryptos = [...new Set(sentimentData.flatMap(item => item.entities))].sort();
+  const uniqueCryptos = [...new Set(sentimentData.flatMap(item => 
+    item.entities.map(entity => typeof entity === 'object' ? entity.name : entity)
+  ))].sort();
 
   const getSentimentColor = (score) => {
     if (score >= 0.5) return '#4caf50';
@@ -209,10 +220,10 @@ const SentimentAnalysis = () => {
         <Tooltip title="Refresh data">
           <IconButton 
             onClick={handleRefresh} 
-            disabled={refreshing || loading}
+            disabled={refreshing}
             color="primary"
           >
-            <Refresh />
+            {refreshing ? <CircularProgress size={24} /> : <Refresh />}
           </IconButton>
         </Tooltip>
       </Box>
@@ -290,7 +301,7 @@ const SentimentAnalysis = () => {
         </CardContent>
       </Card>
       
-      {loading ? (
+      {loading && filteredData.length === 0 ? (
         <Box sx={{ width: '100%', mt: 4 }}>
           <LinearProgress color="primary" />
         </Box>
@@ -301,6 +312,14 @@ const SentimentAnalysis = () => {
               Showing {filteredData.length} of {sentimentData.length} sentiment analyses
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
+            {refreshing && (
+              <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                <CircularProgress size={16} sx={{ mr: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Refreshing...
+                </Typography>
+              </Box>
+            )}
             <Button 
               startIcon={<FilterList />}
               size="small"
@@ -372,19 +391,23 @@ const SentimentAnalysis = () => {
                     >
                       <TableCell>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {row.entities.slice(0, 3).map((entity, idx) => (
-                            <Box sx={{ display: 'flex', alignItems: 'center' }} key={idx}>
-                              <Avatar 
-                                src={`https://cryptologos.cc/logos/${entity.toLowerCase()}-logo.png`} 
-                                sx={{ width: 24, height: 24, mr: 1 }}
-                              >
-                                {entity.charAt(0)}
-                              </Avatar>
-                              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                {entity}
-                              </Typography>
-                            </Box>
-                          ))}
+                          {row.entities.slice(0, 3).map((entity, idx) => {
+                            const entityName = typeof entity === 'object' ? entity.name : entity;
+                            const entitySymbol = typeof entity === 'object' ? entity.symbol : entity;
+                            return (
+                              <Box sx={{ display: 'flex', alignItems: 'center' }} key={idx}>
+                                <Avatar 
+                                  src={`https://cryptologos.cc/logos/${entitySymbol.toLowerCase()}-logo.png`} 
+                                  sx={{ width: 24, height: 24, mr: 1 }}
+                                >
+                                  {entityName.charAt(0)}
+                                </Avatar>
+                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                  {entityName}
+                                </Typography>
+                              </Box>
+                            );
+                          })}
                           {row.entities.length > 3 && (
                             <Chip 
                               label={`+${row.entities.length - 3} more`} 

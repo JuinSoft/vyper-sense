@@ -21,6 +21,7 @@ export const Web3Provider = ({ children }) => {
     11155111: 'Sepolia Testnet',
     137: 'Polygon Mainnet',
     80001: 'Polygon Mumbai',
+    80002: 'Polygon Amoy',
     421613: 'Arbitrum Goerli',
     42161: 'Arbitrum One',
     10: 'Optimism',

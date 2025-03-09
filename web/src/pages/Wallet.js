@@ -89,7 +89,7 @@ const Wallet = () => {
   const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [contractAddress, setContractAddress] = useState(api.CONTRACT_ADDRESS);
+  const [contractAddress, setContractAddress] = useState("0x22633574A82ffC4d5d88ccAb7887799c188544e3");
   const [contractInstance, setContractInstance] = useState(null);
   const [contractOwner, setContractOwner] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -424,7 +424,7 @@ const Wallet = () => {
                             <Skeleton width={100} height={24} sx={{ mt: 0.5 }} />
                           ) : (
                             <Typography variant="h6" component="span" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-                              {balance} ETH
+                              {balance} POL
                             </Typography>
                           )
                         } 

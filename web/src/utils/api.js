@@ -1,9 +1,12 @@
 import axios from 'axios';
 import { ethers } from 'ethers';
+import { getCachedData, setCachedData, hasCachedData, clearCacheItem, clearCache } from './cacheService';
+import { fetchAllRssArticles } from './rssService';
+import { fetchCryptoMarketData, fetchCryptoHistory } from './liveCoinWatchApi';
+import { getSymbolFromName } from './cryptoIcons';
 
 // Constants
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
-const NEWS_FEED_URL = 'https://cointelegraph.com/rss';
 const CONTRACT_ADDRESS = '0x22633574A82ffC4d5d88ccAb7887799c188544e3';
 const POLYGON_AMOY_RPC = 'https://rpc-amoy.polygon.technology';
 const POLYGON_AMOY_EXPLORER = 'https://www.oklink.com/amoy/address';
@@ -45,30 +48,17 @@ const retryOperation = async (operation, maxRetries = MAX_RETRIES, delay = RETRY
   throw lastError;
 };
 
-// News Service
+// News Service - Updated to use RSS service with caching
 export const fetchNewsArticles = async () => {
   try {
-    const response = await axios.get(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(NEWS_FEED_URL)}`);
-    
-    if (response.data && response.data.items) {
-      return response.data.items.map(item => ({
-        id: item.guid || item.link,
-        title: item.title,
-        summary: item.description,
-        link: item.link,
-        published: new Date(item.pubDate),
-        source: response.data.feed.title
-      }));
-    }
-    
-    return [];
+    return await fetchAllRssArticles(20);
   } catch (error) {
     console.error('Error fetching news articles:', error);
     throw error;
   }
 };
 
-// AI Service
+// AI Service - Updated to use caching
 export const analyzeSentiment = async (articles) => {
   if (!OPENAI_API_KEY) {
     console.error('OpenAI API key is missing');
@@ -77,6 +67,15 @@ export const analyzeSentiment = async (articles) => {
   
   if (!articles || articles.length === 0) {
     return [];
+  }
+  
+  // Create a unique key based on article IDs
+  const articleIds = articles.map(a => a.id).join('_');
+  const cacheKey = `sentiment_analysis_${articleIds}`;
+  
+  // Check cache first
+  if (hasCachedData(cacheKey)) {
+    return getCachedData(cacheKey);
   }
   
   return retryOperation(async () => {
@@ -162,13 +161,32 @@ export const analyzeSentiment = async (articles) => {
     
     const result = JSON.parse(response.data.choices[0].message.function_call.arguments);
     
-    return result.analyses.map(analysis => ({
+    const analyses = result.analyses.map(analysis => ({
       ...analysis,
-      timestamp: new Date()
+      timestamp: new Date(),
+      // Add symbol for each entity for icon display
+      entities: analysis.entities.map(entity => {
+        if (typeof entity === 'object' && entity.name) {
+          return {
+            name: entity.name,
+            symbol: entity.symbol || getSymbolFromName(entity.name) || entity.name
+          };
+        }
+        return {
+          name: entity,
+          symbol: getSymbolFromName(entity) || entity
+        };
+      })
     }));
+    
+    // Cache the result
+    setCachedData(cacheKey, analyses);
+    
+    return analyses;
   });
 };
 
+// Trading Signals - Updated to use caching
 export const generateTradingSignals = async (sentimentAnalyses) => {
   if (!OPENAI_API_KEY) {
     console.error('OpenAI API key is missing');
@@ -177,6 +195,15 @@ export const generateTradingSignals = async (sentimentAnalyses) => {
   
   if (!sentimentAnalyses || sentimentAnalyses.length === 0) {
     return [];
+  }
+  
+  // Create a unique key based on sentiment analysis timestamps
+  const analysisTimes = sentimentAnalyses.map(a => a.timestamp?.getTime()).join('_');
+  const cacheKey = `trading_signals_${analysisTimes}`;
+  
+  // Check cache first
+  if (hasCachedData(cacheKey)) {
+    return getCachedData(cacheKey);
   }
   
   return retryOperation(async () => {
@@ -263,151 +290,168 @@ export const generateTradingSignals = async (sentimentAnalyses) => {
     
     const result = JSON.parse(response.data.choices[0].message.function_call.arguments);
     
-    return result.signals.map(signal => ({
+    const signals = result.signals.map(signal => ({
       ...signal,
-      timestamp: new Date()
+      timestamp: new Date(),
+      // Add symbol for cryptocurrency for icon display
+      symbol: getSymbolFromName(signal.cryptocurrency) || signal.cryptocurrency
     }));
+    
+    // Cache the result
+    setCachedData(cacheKey, signals);
+    
+    return signals;
   });
 };
 
-export const generateVisualization = async (tradingSignal) => {
-  if (!OPENAI_API_KEY) {
-    console.error('OpenAI API key is missing');
-    throw new Error('OpenAI API key is missing');
-  }
-  
-  if (!tradingSignal || tradingSignal.confidence < 0.6) {
-    return null;
-  }
-  
-  return retryOperation(async () => {
-    const color = tradingSignal.signal_type === "buy" ? "green" : 
-                 tradingSignal.signal_type === "sell" ? "red" : "yellow";
+// Fetch market data for cryptocurrencies
+export const fetchMarketData = async (cryptos = TOP_CRYPTOCURRENCIES) => {
+  try {
+    // Convert crypto names to symbols
+    const symbols = cryptos.map(crypto => getSymbolFromName(crypto) || crypto);
     
-    const response = await axios.post(
-      'https://api.openai.com/v1/images/generations',
-      {
-        model: "dall-e-3",
-        prompt: `Create a professional cryptocurrency trading signal visualization for ${tradingSignal.cryptocurrency}.
-        Signal type: ${tradingSignal.signal_type.toUpperCase()} (use ${color} color theme)
-        Sentiment score: ${tradingSignal.sentiment_score.toFixed(2)}
-        Confidence: ${tradingSignal.confidence.toFixed(2)}
-        
-        The image should:
-        - Have a clean, professional financial/trading appearance
-        - Include the cryptocurrency name and logo
-        - Prominently display the ${tradingSignal.signal_type.toUpperCase()} signal
-        - Use a ${color} color scheme to indicate the signal type
-        - Include visual indicators of sentiment and confidence
-        - Have a modern, digital aesthetic suitable for crypto trading
-        
-        Do NOT include any text explaining the reasoning - just the key metrics and signal.
-        Make it visually appealing and suitable for sharing on social media.`,
-        size: "1024x1024",
-        quality: "standard",
-        n: 1,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    return response.data.data[0].url;
-  });
+    // Fetch market data from LiveCoinWatch
+    return await fetchCryptoMarketData(symbols);
+  } catch (error) {
+    console.error('Error fetching market data:', error);
+    throw error;
+  }
 };
 
-// Blockchain Service
+// Fetch historical data for a cryptocurrency
+export const fetchHistoricalData = async (crypto, days = 30) => {
+  try {
+    const symbol = getSymbolFromName(crypto) || crypto;
+    const end = Date.now();
+    const start = end - (days * 24 * 60 * 60 * 1000);
+    
+    return await fetchCryptoHistory(symbol, 'USD', start, end, '1d');
+  } catch (error) {
+    console.error(`Error fetching historical data for ${crypto}:`, error);
+    throw error;
+  }
+};
+
+// Clear cache for specific data type
+export const refreshData = (dataType) => {
+  switch (dataType) {
+    case 'news':
+      // Clear all RSS feed caches
+      clearCacheItem('rss_all_feeds');
+      break;
+    case 'sentiment':
+      // Clear sentiment analysis cache
+      clearCacheItem('sentiment_analysis');
+      break;
+    case 'signals':
+      // Clear trading signals cache
+      clearCacheItem('trading_signals');
+      break;
+    case 'market':
+      // Clear market data cache
+      clearCacheItem('lcw_market');
+      clearCacheItem('lcw_overview');
+      break;
+    case 'all':
+      // Clear all caches
+      clearCache();
+      break;
+    default:
+      break;
+  }
+};
+
+// Web3 Provider
 export const getProvider = () => {
   return new ethers.JsonRpcProvider(POLYGON_AMOY_RPC);
 };
 
+// Contract instance
 export const getContract = (provider) => {
   return new ethers.Contract(CONTRACT_ADDRESS, SENTIMENT_TRACKER_ABI, provider);
 };
 
+// Get all cryptocurrencies from the contract
 export const getAllCryptocurrencies = async (provider) => {
+  const contract = getContract(provider);
   try {
-    const contract = getContract(provider);
     return await contract.getAllCryptocurrencies();
   } catch (error) {
     console.error('Error getting all cryptocurrencies:', error);
-    throw error;
+    return [];
   }
 };
 
+// Get sentiment for a cryptocurrency
 export const getSentiment = async (provider, cryptocurrency) => {
+  const contract = getContract(provider);
   try {
-    const contract = getContract(provider);
-    const data = await contract.getSentiment(cryptocurrency);
-    
+    const [sentiment, confidence, timestamp] = await contract.getSentiment(cryptocurrency);
     return {
-      sentiment: Number(data[0]) / 100, // Convert from int8 to float (-1.0 to 1.0)
-      confidence: Number(data[1]) / 100, // Convert from uint8 to float (0.0 to 1.0)
-      timestamp: new Date(Number(data[2]) * 1000) // Convert from seconds to milliseconds
+      sentiment: Number(sentiment),
+      confidence: Number(confidence),
+      timestamp: new Date(Number(timestamp) * 1000)
     };
   } catch (error) {
     console.error(`Error getting sentiment for ${cryptocurrency}:`, error);
-    throw error;
+    return null;
   }
 };
 
+// Get sentiment history for a cryptocurrency
 export const getSentimentHistory = async (provider, cryptocurrency) => {
+  const contract = getContract(provider);
   try {
-    const contract = getContract(provider);
     const history = await contract.getSentimentHistory(cryptocurrency);
-    
-    return history.map(record => ({
-      sentiment: Number(record[0]) / 100, // Convert from int8 to float (-1.0 to 1.0)
-      timestamp: new Date(Number(record[1]) * 1000) // Convert from seconds to milliseconds
+    return history.map(item => ({
+      sentiment: Number(item.sentiment),
+      timestamp: new Date(Number(item.timestamp) * 1000)
     }));
   } catch (error) {
     console.error(`Error getting sentiment history for ${cryptocurrency}:`, error);
-    throw error;
+    return [];
   }
 };
 
+// Record sentiment for a cryptocurrency
 export const recordSentiment = async (signer, cryptocurrency, sentimentScore, confidence) => {
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, SENTIMENT_TRACKER_ABI, signer);
+  
   try {
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, SENTIMENT_TRACKER_ABI, signer);
-    
-    // Convert sentiment score to int8 (multiply by 100 to preserve 2 decimal places)
+    // Convert sentiment score from -1.0 to 1.0 range to -100 to 100 range
     const sentimentInt = Math.round(sentimentScore * 100);
     
-    // Convert confidence to uint8 (multiply by 100 to preserve 2 decimal places)
+    // Convert confidence from 0.0 to 1.0 range to 0 to 100 range
     const confidenceInt = Math.round(confidence * 100);
     
-    // Record the sentiment
     const tx = await contract.recordSentiment(cryptocurrency, sentimentInt, confidenceInt);
-    
-    // Wait for transaction to be mined
-    await tx.wait();
-    
-    return tx.hash;
+    return await tx.wait();
   } catch (error) {
     console.error(`Error recording sentiment for ${cryptocurrency}:`, error);
     throw error;
   }
 };
 
+// Get explorer URL for an address
 export const getExplorerUrl = (address) => {
   return `${POLYGON_AMOY_EXPLORER}/${address}`;
 };
 
-export default {
+// Default export
+const apiService = {
   fetchNewsArticles,
   analyzeSentiment,
   generateTradingSignals,
-  generateVisualization,
+  fetchMarketData,
+  fetchHistoricalData,
+  refreshData,
   getProvider,
   getContract,
   getAllCryptocurrencies,
   getSentiment,
   getSentimentHistory,
   recordSentiment,
-  getExplorerUrl,
-  TOP_CRYPTOCURRENCIES,
-  CONTRACT_ADDRESS
-}; 
+  getExplorerUrl
+};
+
+export default apiService; 

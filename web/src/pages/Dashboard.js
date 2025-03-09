@@ -15,7 +15,10 @@ import {
   Alert,
   Snackbar,
   IconButton,
-  Tooltip
+  Tooltip,
+  Tab,
+  Tabs,
+  Paper
 } from '@mui/material';
 import { 
   TrendingUp, 
@@ -25,11 +28,17 @@ import {
   Insights,
   Article,
   Refresh,
-  OpenInNew
+  OpenInNew,
+  RssFeed,
+  ShowChart
 } from '@mui/icons-material';
 import { Web3Context } from '../utils/Web3Context';
 import api from '../utils/api';
 import { Link } from 'react-router-dom';
+import CryptoMarketData from '../components/CryptoMarketData';
+import RssFeedManager from '../components/RssFeedManager';
+import { getCryptoIconPath } from '../utils/cryptoIcons';
+import { clearCache } from '../utils/cacheService';
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -44,6 +53,7 @@ const Dashboard = () => {
   const [tradingSignals, setTradingSignals] = useState([]);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
   // Load data
   useEffect(() => {
@@ -58,7 +68,7 @@ const Dashboard = () => {
       // Fetch news articles
       setNewsLoading(true);
       const articles = await api.fetchNewsArticles();
-      setNewsArticles(articles.slice(0, 4)); // Show only the first 4 articles
+      setNewsArticles(articles.slice(0, 8)); // Show only the first 8 articles
       setNewsLoading(false);
       
       // Analyze sentiment
@@ -83,7 +93,13 @@ const Dashboard = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    // Clear all caches
+    clearCache();
     fetchData();
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
   };
 
   const getSignalIcon = (type) => {
@@ -172,7 +188,7 @@ const Dashboard = () => {
         <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', mb: 0 }}>
           Market Overview
         </Typography>
-        <Tooltip title="Refresh data">
+        <Tooltip title="Refresh all data">
           <IconButton 
             onClick={handleRefresh} 
             disabled={refreshing || loading}
@@ -189,98 +205,202 @@ const Dashboard = () => {
         </Box>
       ) : (
         <>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} md={8}>
-              <Card>
-                <CardHeader 
-                  title="Latest Sentiment Analysis" 
-                  action={
-                    <Button 
-                      color="primary" 
-                      endIcon={<Insights />}
-                      component={Link}
-                      to="/sentiment"
-                    >
-                      View All
-                    </Button>
-                  }
-                />
-                <Divider />
-                <CardContent>
-                  {sentimentLoading ? (
-                    <LinearProgress color="primary" />
-                  ) : sentimentData.length > 0 ? (
-                    <Grid container spacing={2}>
-                      {sentimentData.slice(0, 4).map((item, index) => (
-                        <Grid item xs={12} sm={6} key={index}>
+          <Paper sx={{ mb: 4 }}>
+            <Tabs 
+              value={activeTab} 
+              onChange={handleTabChange}
+              variant="fullWidth"
+              textColor="primary"
+              indicatorColor="primary"
+            >
+              <Tab icon={<ShowChart />} label="MARKET DATA" />
+              <Tab icon={<Insights />} label="SENTIMENT" />
+              <Tab icon={<RssFeed />} label="NEWS FEEDS" />
+            </Tabs>
+          </Paper>
+
+          {/* Market Data Tab */}
+          {activeTab === 0 && (
+            <Box sx={{ mb: 4 }}>
+              <CryptoMarketData />
+            </Box>
+          )}
+
+          {/* Sentiment Tab */}
+          {activeTab === 1 && (
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} md={8}>
+                <Card>
+                  <CardHeader 
+                    title="Latest Sentiment Analysis" 
+                    action={
+                      <Button 
+                        color="primary" 
+                        endIcon={<Insights />}
+                        component={Link}
+                        to="/sentiment"
+                      >
+                        View All
+                      </Button>
+                    }
+                  />
+                  <Divider />
+                  <CardContent>
+                    {sentimentLoading ? (
+                      <LinearProgress color="primary" />
+                    ) : sentimentData.length > 0 ? (
+                      <Grid container spacing={2}>
+                        {sentimentData.slice(0, 4).map((item, index) => (
+                          <Grid item xs={12} sm={6} key={index}>
+                            <Box 
+                              sx={{ 
+                                p: 2, 
+                                borderRadius: 2, 
+                                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 2
+                              }}
+                            >
+                              <Avatar 
+                                src={getCryptoIconPath(item.entities[0]?.symbol)} 
+                                sx={{ width: 48, height: 48 }}
+                              >
+                                {item.entities[0]?.name?.charAt(0)}
+                              </Avatar>
+                              <Box sx={{ flexGrow: 1 }}>
+                                <Typography variant="subtitle2" noWrap title={item.headline}>
+                                  {item.headline.length > 50 ? `${item.headline.substring(0, 50)}...` : item.headline}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Sentiment: 
+                                    <Box component="span" sx={{ color: getSentimentColor(item.sentiment_score), ml: 1, fontWeight: 'bold' }}>
+                                      {(item.sentiment_score * 100).toFixed(0)}%
+                                    </Box>
+                                  </Typography>
+                                  <Chip 
+                                    label={item.source} 
+                                    size="small" 
+                                    sx={{ 
+                                      backgroundColor: 'rgba(0, 201, 255, 0.1)',
+                                      color: theme.palette.primary.main,
+                                      fontWeight: 'bold'
+                                    }} 
+                                  />
+                                </Box>
+                              </Box>
+                            </Box>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    ) : (
+                      <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                        No sentiment data available. Please refresh to analyze the latest news.
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card>
+                  <CardHeader 
+                    title="Trading Signals" 
+                    action={
+                      <Button 
+                        color="primary" 
+                        endIcon={<Timeline />}
+                        component={Link}
+                        to="/signals"
+                      >
+                        View All
+                      </Button>
+                    }
+                  />
+                  <Divider />
+                  <CardContent>
+                    {signalsLoading ? (
+                      <LinearProgress color="primary" />
+                    ) : tradingSignals.length > 0 ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {tradingSignals.slice(0, 3).map((signal, index) => (
                           <Box 
+                            key={index}
                             sx={{ 
                               p: 2, 
                               borderRadius: 2, 
                               backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 2
+                              borderLeft: `4px solid ${getSignalColor(signal.signal_type)}`
                             }}
                           >
-                            <Avatar 
-                              src={`https://cryptologos.cc/logos/${item.entities[0]?.toLowerCase()}-logo.png`} 
-                              sx={{ width: 48, height: 48 }}
-                            >
-                              {item.entities[0]?.charAt(0)}
-                            </Avatar>
-                            <Box sx={{ flexGrow: 1 }}>
-                              <Typography variant="subtitle2" noWrap title={item.headline}>
-                                {item.headline.length > 50 ? `${item.headline.substring(0, 50)}...` : item.headline}
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                              <Avatar 
+                                src={getCryptoIconPath(signal.symbol)} 
+                                sx={{ width: 32, height: 32, mr: 1 }}
+                              >
+                                {signal.cryptocurrency.charAt(0)}
+                              </Avatar>
+                              <Typography variant="subtitle2">
+                                {signal.cryptocurrency}
                               </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
-                                <Typography variant="body2" color="text.secondary">
-                                  Sentiment: 
-                                  <Box component="span" sx={{ color: getSentimentColor(item.sentiment_score), ml: 1, fontWeight: 'bold' }}>
-                                    {(item.sentiment_score * 100).toFixed(0)}%
-                                  </Box>
-                                </Typography>
-                                <Chip 
-                                  label={item.source} 
-                                  size="small" 
-                                  sx={{ 
-                                    backgroundColor: 'rgba(0, 201, 255, 0.1)',
-                                    color: theme.palette.primary.main,
-                                    fontWeight: 'bold'
-                                  }} 
-                                />
-                              </Box>
+                              <Box sx={{ flexGrow: 1 }} />
+                              <Chip 
+                                icon={getSignalIcon(signal.signal_type)} 
+                                label={signal.signal_type.toUpperCase()} 
+                                size="small"
+                                sx={{ 
+                                  backgroundColor: `${getSignalColor(signal.signal_type)}20`,
+                                  color: getSignalColor(signal.signal_type),
+                                  fontWeight: 'bold'
+                                }}
+                              />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              {signal.reasoning.length > 100 ? `${signal.reasoning.substring(0, 100)}...` : signal.reasoning}
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="caption" color="text.secondary">
+                                Confidence: {(signal.confidence * 100).toFixed(0)}%
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {formatDate(signal.timestamp)}
+                              </Typography>
                             </Box>
                           </Box>
-                        </Grid>
-                      ))}
-                    </Grid>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 3 }}>
-                      <Typography variant="body1" color="text.secondary">
-                        No sentiment data available. Click refresh to analyze the latest news.
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                        No trading signals available. Please refresh to generate signals.
                       </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
-            
-            <Grid item xs={12} md={4}>
-              <Card sx={{ height: '100%' }}>
+          )}
+
+          {/* RSS Feeds Tab */}
+          {activeTab === 2 && (
+            <Box sx={{ mb: 4 }}>
+              <RssFeedManager onRefresh={fetchData} />
+            </Box>
+          )}
+
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Card>
                 <CardHeader 
-                  title="Recent News" 
+                  title="Latest News" 
                   action={
-                    <Tooltip title="Open news source">
-                      <IconButton 
-                        color="primary" 
-                        href="https://cointelegraph.com/" 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <OpenInNew />
-                      </IconButton>
-                    </Tooltip>
+                    <Button 
+                      color="primary" 
+                      endIcon={<Article />}
+                      onClick={() => window.open(newsArticles[0]?.link, '_blank')}
+                      disabled={newsArticles.length === 0}
+                    >
+                      Read More
+                    </Button>
                   }
                 />
                 <Divider />
@@ -288,131 +408,63 @@ const Dashboard = () => {
                   {newsLoading ? (
                     <LinearProgress color="primary" />
                   ) : newsArticles.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {newsArticles.map((news, index) => (
-                        <Box key={index}>
-                          <Typography 
-                            variant="subtitle2" 
-                            gutterBottom
-                            component="a"
-                            href={news.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                    <Grid container spacing={2}>
+                      {newsArticles.slice(0, 6).map((article, index) => (
+                        <Grid item xs={12} sm={6} md={4} key={index}>
+                          <Card 
+                            elevation={1} 
                             sx={{ 
-                              color: 'inherit', 
-                              textDecoration: 'none',
-                              '&:hover': { color: theme.palette.primary.main }
+                              height: '100%', 
+                              display: 'flex', 
+                              flexDirection: 'column',
+                              transition: 'transform 0.2s',
+                              '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: 6
+                              }
                             }}
                           >
-                            {news.title}
-                          </Typography>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="caption" color="text.secondary">
-                              {news.source}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {formatDate(news.published)}
-                            </Typography>
-                          </Box>
-                          {index < newsArticles.length - 1 && <Divider sx={{ my: 1.5 }} />}
-                        </Box>
+                            <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+                              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'medium', lineHeight: 1.3 }}>
+                                {article.title.length > 70 ? `${article.title.substring(0, 70)}...` : article.title}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                {article.summary?.replace(/<[^>]*>?/gm, '').substring(0, 100)}...
+                              </Typography>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 'auto' }}>
+                                <Chip 
+                                  label={article.source} 
+                                  size="small" 
+                                  sx={{ 
+                                    backgroundColor: 'rgba(0, 201, 255, 0.1)',
+                                    color: theme.palette.primary.main
+                                  }} 
+                                />
+                                <Typography variant="caption" color="text.secondary">
+                                  {formatDate(article.published)}
+                                </Typography>
+                              </Box>
+                            </CardContent>
+                            <Button 
+                              endIcon={<OpenInNew fontSize="small" />}
+                              onClick={() => window.open(article.link, '_blank')}
+                              sx={{ alignSelf: 'flex-end', m: 1 }}
+                            >
+                              Read
+                            </Button>
+                          </Card>
+                        </Grid>
                       ))}
-                    </Box>
+                    </Grid>
                   ) : (
-                    <Box sx={{ textAlign: 'center', py: 3 }}>
-                      <Typography variant="body1" color="text.secondary">
-                        No news articles available. Click refresh to fetch the latest news.
-                      </Typography>
-                    </Box>
+                    <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                      No news articles available. Please refresh to fetch the latest news.
+                    </Typography>
                   )}
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 0 }}>
-              Latest Trading Signals
-            </Typography>
-            <Button 
-              variant="outlined" 
-              endIcon={<Timeline />}
-              component={Link}
-              to="/signals"
-            >
-              View All Signals
-            </Button>
-          </Box>
-          
-          {signalsLoading ? (
-            <LinearProgress color="primary" />
-          ) : tradingSignals.length > 0 ? (
-            <Grid container spacing={3}>
-              {tradingSignals.slice(0, 3).map((signal, index) => (
-                <Grid item xs={12} sm={6} md={4} key={index}>
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Avatar 
-                          src={`https://cryptologos.cc/logos/${signal.cryptocurrency.toLowerCase()}-logo.png`} 
-                          sx={{ width: 40, height: 40, mr: 2 }}
-                        >
-                          {signal.cryptocurrency.charAt(0)}
-                        </Avatar>
-                        <Typography variant="h6">{signal.cryptocurrency}</Typography>
-                        <Box sx={{ flexGrow: 1 }} />
-                        <Chip 
-                          label={signal.signal_type.toUpperCase()} 
-                          size="small"
-                          icon={getSignalIcon(signal.signal_type)}
-                          sx={{ 
-                            backgroundColor: `${getSignalColor(signal.signal_type)}20`,
-                            color: getSignalColor(signal.signal_type),
-                            fontWeight: 'bold',
-                            borderRadius: '4px'
-                          }} 
-                        />
-                      </Box>
-                      
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {signal.reasoning.length > 120 ? `${signal.reasoning.substring(0, 120)}...` : signal.reasoning}
-                      </Typography>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Confidence
-                        </Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                          {(signal.confidence * 100).toFixed(0)}%
-                        </Typography>
-                      </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={signal.confidence * 100} 
-                        sx={{ 
-                          height: 6, 
-                          borderRadius: 3,
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          '& .MuiLinearProgress-bar': {
-                            backgroundColor: getSignalColor(signal.signal_type)
-                          }
-                        }} 
-                      />
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 4, backgroundColor: 'rgba(0, 0, 0, 0.05)', borderRadius: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                No Trading Signals Available
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Click the refresh button to generate new trading signals based on the latest news.
-              </Typography>
-            </Box>
-          )}
         </>
       )}
     </Box>

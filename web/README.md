@@ -10,6 +10,37 @@ A modern web interface for the VyperSense cryptocurrency sentiment analysis tool
 - **Trading Signals**: View buy/sell/hold signals based on sentiment analysis
 - **Wallet Management**: Manage your wallet and interact with the sentiment tracker contract
 
+## New Features
+
+### Cryptocurrency Icons
+The application now uses the [cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons) package for displaying cryptocurrency icons instead of calling DALL-E. This provides consistent and recognizable icons for all major cryptocurrencies.
+
+### Improved UI
+- Added tabbed interface on the Dashboard for better organization
+- Enhanced news card display with hover effects
+- Improved market data display with favorites functionality
+- Better responsive design for all screen sizes
+
+### Caching
+API responses are now cached for 5 minutes to improve performance and reduce API calls. The cache is automatically invalidated when:
+- The user manually refreshes the data
+- 5 minutes have passed since the last fetch
+- The user adds or removes RSS feeds
+
+### RSS Feed Management
+Users can now manage multiple RSS feeds for news:
+- Add custom RSS feeds
+- Remove existing feeds
+- Test feeds before adding them
+- View news from all configured feeds
+
+### LiveCoinWatch Integration
+The application now uses the [LiveCoinWatch API](https://livecoinwatch.github.io/lcw-api-docs/) for real-time cryptocurrency market data:
+- Current prices
+- 24-hour price changes
+- Market cap
+- Trading volume
+
 ## Getting Started
 
 ### Prerequisites
@@ -94,4 +125,15 @@ You can change the contract address in the Wallet page if needed.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Environment Variables
+
+To run this project, you will need to add the following environment variables to your .env file:
+
+```
+REACT_APP_OPENAI_API_KEY=your-openai-api-key
+REACT_APP_LCW_API_KEY=your-livecoinwatch-api-key
+```
+
+You can obtain an API key for LiveCoinWatch by signing up at [livecoinwatch.com](https://www.livecoinwatch.com/). 
