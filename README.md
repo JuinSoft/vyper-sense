@@ -95,7 +95,3 @@ Here are some ideas for extending the project:
 3. **Trading Integration**: Connect to trading APIs to execute trades based on signals
 4. **Web Dashboard**: Create a web interface to visualize sentiment data and trading signals
 5. **Multi-chain Support**: Extend blockchain integration to other chains like Ethereum, Solana, etc.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
