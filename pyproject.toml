@@ -1,5 +1,5 @@
 [project]
-name = "crypto-sentiment-bot"
+name = "vypersense"
 version = "0.1.0"
 description = "AI-powered cryptocurrency sentiment analysis bot"
 readme = "README.md"

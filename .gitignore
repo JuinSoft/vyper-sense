@@ -1,4 +1,16 @@
 # Created by venv; see https://docs.python.org/3/library/venv.html
 
 .env
-
+pyenv*
+bin
+include
+lib
+lib64
+libx32
+local
+share
+crypto_sentiment_bot*
+*.deployments.db
+vyper_git*
+uv.lock
+.lock*

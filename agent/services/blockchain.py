@@ -39,7 +39,7 @@ class BlockchainService:
             )
             
             contract_address = sentiment_tracker.address
-            logger.info(f"Deployed SentimentTracker contract at {contract_address}")
+            logger.info(f"Deployed VyperSense SentimentTracker contract at {contract_address}")
             return contract_address
             
         except Exception as e:

@@ -2,7 +2,7 @@
 src = "src"
 out = "out"
 dot_env = ".env"
-name = "crypto-sentiment-bot"
+name = "vypersense"
 version = "0.1.0"
 description = "AI-powered cryptocurrency sentiment analysis bot"
 readme = "README.md"
@@ -38,4 +38,8 @@ default_account_name="account"
 [networks.polygon-amoy]
 url = "https://rpc-amoy.polygon.technology"
 chain_id = 80002
-explorer_uri = https://www.oklink.com/amoy
+explorer_uri = "https://www.oklink.com/amoy"
+
+[contracts.SentimentTracker]
+source = "SentimentTracker.vy"
+constructor_args = ["VyperSenseTracker"]

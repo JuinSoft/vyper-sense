@@ -25,7 +25,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('crypto_sentiment_bot.log')
+        logging.FileHandler('vypersense.log')
     ]
 )
 
@@ -74,7 +74,7 @@ def main():
         
         # Deploy a new contract if requested
         if args.deploy_contract and not contract_address:
-            contract_address = blockchain_service.deploy_sentiment_tracker("CryptoSentimentTracker")
+            contract_address = blockchain_service.deploy_sentiment_tracker("VyperSenseTracker")
             if contract_address:
                 logger.info(f"Deployed new sentiment tracker contract at {contract_address}")
             else:
@@ -167,7 +167,7 @@ def run_cycle(news_service, ai_service, twitter_service, blockchain_service, con
                 f"Sentiment: {signal.sentiment_score:.2f} | "
                 f"Confidence: {signal.confidence:.2f}\n\n"
                 f"{signal.reasoning[:100]}...\n\n"
-                f"#crypto #trading #sentiment"
+                f"#crypto #trading #sentiment #VyperSense"
             )
             
             logger.info("Posting to Twitter...")

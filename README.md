@@ -48,14 +48,26 @@ FEED_URL=https://cointelegraph.com/rss
 
 ### Deploy the Sentiment Tracker Contract
 
+You can deploy the contract using either of these methods:
+
 ```bash
-uv run moccasin deploy --network polygon
+# Method 1: Using the deploy script
+python script/deploy.py --network polygon-fork
+
+# Method 2: Using moccasin directly
+uv run moccasin deploy SentimentTracker --network polygon-fork
 ```
 
 ### Run the Agent
 
 ```bash
 python script/run_agent.py --deploy-contract
+```
+
+Or if you already have a deployed contract:
+
+```bash
+python script/run_agent.py --contract-address YOUR_CONTRACT_ADDRESS
 ```
 
 ### Command Line Options
