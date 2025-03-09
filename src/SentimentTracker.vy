@@ -1,4 +1,4 @@
-# @version ^0.3.7
+# @version 0.4.1
 
 """
 @title Cryptocurrency Sentiment Tracker
@@ -22,7 +22,7 @@ name: public(String[100])
 owner: public(address)
 sentiment_data: public(HashMap[String[64], DynArray[SentimentRecord, 1000]])  # Maps cryptocurrency name to sentiment records
 
-@external
+@deploy
 def __init__(_name: String[100]):
     """
     @notice Initialize the sentiment tracker
@@ -39,13 +39,10 @@ def record_sentiment(cryptocurrency: String[64], sentiment: int128, timestamp: u
     @param sentiment Sentiment score (-100 to 100, representing -1.00 to 1.00)
     @param timestamp Unix timestamp when the sentiment was recorded
     """
-    assert -100 <= sentiment <= 100, "Sentiment must be between -100 and 100"
+    assert sentiment >= -100 and sentiment <= 100, "Sentiment must be between -100 and 100"
     
-    # Create a new sentiment record
-    record: SentimentRecord = SentimentRecord({
-        sentiment: sentiment,
-        timestamp: timestamp
-    })
+    # Create a new sentiment record using keyword arguments
+    record: SentimentRecord = SentimentRecord(sentiment=sentiment, timestamp=timestamp)
     
     # Add the record to the cryptocurrency's history
     self.sentiment_data[cryptocurrency].append(record)
@@ -53,8 +50,8 @@ def record_sentiment(cryptocurrency: String[64], sentiment: int128, timestamp: u
     # Emit event
     log SentimentRecorded(cryptocurrency, sentiment, timestamp)
 
-@view
 @external
+@view
 def get_sentiment_history(cryptocurrency: String[64]) -> DynArray[SentimentRecord, 1000]:
     """
     @notice Get the sentiment history for a cryptocurrency
@@ -63,8 +60,8 @@ def get_sentiment_history(cryptocurrency: String[64]) -> DynArray[SentimentRecor
     """
     return self.sentiment_data[cryptocurrency]
 
-@view
 @external
+@view
 def get_latest_sentiment(cryptocurrency: String[64]) -> (int128, uint256):
     """
     @notice Get the latest sentiment for a cryptocurrency
@@ -78,8 +75,8 @@ def get_latest_sentiment(cryptocurrency: String[64]) -> (int128, uint256):
     latest: SentimentRecord = history[len(history) - 1]
     return (latest.sentiment, latest.timestamp)
 
-@view
 @external
+@view
 def get_average_sentiment(cryptocurrency: String[64], time_period: uint256) -> int128:
     """
     @notice Get the average sentiment for a cryptocurrency over a time period
@@ -88,7 +85,8 @@ def get_average_sentiment(cryptocurrency: String[64], time_period: uint256) -> i
     @return Average sentiment score
     """
     history: DynArray[SentimentRecord, 1000] = self.sentiment_data[cryptocurrency]
-    if len(history) == 0:
+    actual_length: uint256 = len(history)
+    if actual_length == 0:
         return 0  # Return 0 if no history exists
     
     current_time: uint256 = block.timestamp
@@ -100,14 +98,16 @@ def get_average_sentiment(cryptocurrency: String[64], time_period: uint256) -> i
     if time_period > 0:
         cutoff_time = current_time - time_period
     
-    # Sum up the sentiment scores within the time period
-    for i in range(len(history)):
+    # Iterate over the dynarray using the fixed bound (1000) and break when index exceeds the actual length
+    for i: uint256 in range(1000):
+        if i >= actual_length:
+            break
         if time_period == 0 or history[i].timestamp >= cutoff_time:
             total_sentiment += history[i].sentiment
             count += 1
     
-    # Calculate the average
+    # Calculate the average sentiment using floor division
     if count == 0:
         return 0
     
-    return total_sentiment / convert(count, int128) 
+    return total_sentiment // convert(count, int128)
