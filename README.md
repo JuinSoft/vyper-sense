@@ -6,6 +6,9 @@ An AI-powered cryptocurrency sentiment analysis bot that monitors news, analyzes
 <img src="./icon.jpeg" alt="VyperSense Logo" width="400"/>
 </p>
 
+## Contract Address
+Deployed CONTRACT Address - https://www.oklink.com/amoy/address/0x22633574a82ffc4d5d88ccab7887799c188544e3 [Polygon Amoy]
+
 ## Overview
 
 VyperSense is an autonomous agent that:
